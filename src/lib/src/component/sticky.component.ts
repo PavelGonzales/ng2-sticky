@@ -1,4 +1,8 @@
-import {Component, ElementRef, Input, Output, EventEmitter, OnInit, AfterViewInit, HostListener} from '@angular/core';
+import { Component, ElementRef, Input, Output, EventEmitter, OnInit, AfterViewInit, NgZone } from '@angular/core';
+import { Observable } from 'rxjs/Observable';
+import { fromEvent } from 'rxjs/observable/fromEvent';
+import 'rxjs/add/operator/auditTime';
+import 'rxjs/add/observable/merge';
 
 @Component({
     selector: 'sticky',
@@ -16,6 +20,7 @@ export class StickyComponent implements OnInit, AfterViewInit {
     @Input('sticky-media-query') mediaQuery: string = '';
     @Input('sticky-parent') parentMode: boolean = true;
     @Input('sticky-orientation') orientation: string = 'none';
+    @Input('sticky-debounce') debounce: number = 0;
 
     @Output() activated = new EventEmitter();
     @Output() deactivated = new EventEmitter();
@@ -33,7 +38,7 @@ export class StickyComponent implements OnInit, AfterViewInit {
     private containerStart: number;
     private scrollFinish: number;
 
-    constructor(private element: ElementRef) { }
+    constructor(private element: ElementRef, private ngZone: NgZone) { }
 
     ngOnInit(): void {
         this.elem = this.element.nativeElement;
@@ -44,13 +49,16 @@ export class StickyComponent implements OnInit, AfterViewInit {
         this.container = this.elem.parentNode;
         this.defineOriginalDimensions();
         this.sticker();
-    }
 
-    @HostListener('window:scroll', ['$event'])
-    @HostListener('window:resize', ['$event'])
-    @HostListener('window:orientationchange', ['$event'])
-    onChange(): void {
-        this.sticker();
+        this.ngZone.runOutsideAngular(() => {
+            Observable.merge(
+                fromEvent(window, 'scroll'),
+                fromEvent(window, 'resize'),
+                fromEvent(window, 'orientationchange')
+            )
+                .auditTime(this.debounce)
+                .subscribe(() => this.sticker());
+        });
     }
 
     defineOriginalDimensions(): void {
@@ -86,7 +94,7 @@ export class StickyComponent implements OnInit, AfterViewInit {
         this.elem.classList.remove(this.stickClass);
         Object.assign(this.elem.style, this.originalCss);
 
-        this.reset.next(this.elem);
+        this.ngZone.run(() => this.reset.next(this.elem));
     }
 
     stuckElement(): void {
@@ -105,7 +113,7 @@ export class StickyComponent implements OnInit, AfterViewInit {
             width: this.width
         });
 
-        this.activated.next(this.elem);
+        this.ngZone.run(() => this.activated.next(this.elem));
     }
 
     unstuckElement(): void {
@@ -124,7 +132,7 @@ export class StickyComponent implements OnInit, AfterViewInit {
             width: this.width
         });
 
-        this.deactivated.next(this.elem);
+        this.ngZone.run(() => this.deactivated.next(this.elem));
     }
 
     matchMediaQuery(): any {

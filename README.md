@@ -59,6 +59,8 @@ npm run serve
 
 **[sticky-parent]** : (_default true_) - if true, then the sticky element will be stuck relatively to the parent containers. Otherwise, _window_ will be used as the parent container. 
 
+**[sticky-debounce]** : (_default 0_) - optional throttle for scroll and resize event listeners. May improve performance, at the cost of a slight delay in toggling between the sticky and non-sticky states.
+
 > NOTE: the "position: relative" styling is added to the parent element automatically in order to use the absolute positioning
 
 ### Example
