@@ -21,7 +21,6 @@ export class StickyComponent implements OnInit, AfterViewInit {
     @Output() deactivated = new EventEmitter();
     @Output() reset = new EventEmitter();
 
-    public setDefineDimensions = this.defineDimensions;
     private isStuck: boolean = false;
 
     private elem: any;
